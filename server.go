@@ -5,41 +5,39 @@ package main
 // Copyright (c) 2023 - Valentin Kuznetsov <vkuznet@gmail.com>
 //
 import (
-	"embed"
 	"log"
-	"net/http"
 
 	srvConfig "github.com/CHESSComputing/golib/config"
 	server "github.com/CHESSComputing/golib/server"
 	"github.com/gin-gonic/gin"
 )
 
-// content is our static web server content.
-//
-//go:embed static
-var StaticFs embed.FS
-
+// Verbose level
 var Verbose int
-var StaticDir, StorageDir string
+
+// StorageDir defines location of storage directory
+var StorageDir string
 
 // helper function to setup our router
 func setupRouter() *gin.Engine {
 	routes := []server.Route{
-		{Method: "GET", Path: "/:did", Handler: DataHandler, Authorized: false},
-		{Method: "POST", Path: "/", Handler: UploadHandler, Authorized: true, Scope: "write"},
-		{Method: "DELETE", Path: "/", Handler: DeleteHandler, Authorized: true, Scope: "delete"},
+		{Method: "GET", Path: "/datahub", Handler: DataHandler, Authorized: false, Scope: "read"},
+		{Method: "GET", Path: "/datahub/:didhash/*filepath", Handler: DataHandler, Authorized: false, Scope: "read"},
+		{Method: "POST", Path: "/datahub", Handler: UploadHandler, Authorized: true, Scope: "write"},
+		{Method: "DELETE", Path: "/datahub/:didhash", Handler: DeleteHandler, Authorized: true, Scope: "delete"},
 	}
 
 	r := server.Router(routes, nil, "static", srvConfig.Config.DataHub.WebServer)
-	r.StaticFS("/datastore", http.Dir(StorageDir))
 	return r
 }
 
 // Server defines our HTTP server
 func Server() {
 	Verbose = srvConfig.Config.DataHub.WebServer.Verbose
-	StaticDir = srvConfig.Config.DataHub.WebServer.StaticDir
 	StorageDir = srvConfig.Config.DataHub.StorageDir
+	if StorageDir == "" {
+		log.Fatal("DataHub cannot be started with empty storage dir")
+	}
 	log.Println("storage dir", StorageDir)
 
 	// setup web router and start the service
