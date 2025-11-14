@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	services "github.com/CHESSComputing/golib/services"
 	"github.com/gin-gonic/gin"
@@ -67,6 +68,12 @@ func DataHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
+
+	// Add NO-CACHE headers to show all the time newly added files
+	c.Writer.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	c.Writer.Header().Set("Pragma", "no-cache") // for older browsers
+	c.Writer.Header().Set("Expires", "0")       // proxies treat this as expired
+	c.Writer.Header().Set("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
 
 	// Serve file content if it's a file
 	http.ServeFile(c.Writer, c.Request, path)
