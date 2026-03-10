@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"archive/zip"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -15,7 +16,7 @@ func ListDirs(dir string) ([]string, error) {
 
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("[DataHub.main.ListDirs] os.ReadDir error: %w", err)
 	}
 
 	for _, entry := range entries {
@@ -30,13 +31,13 @@ func ListDirs(dir string) ([]string, error) {
 func copyFile(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("[DataHub.main.copyFile] os.Open error: %w", err)
 	}
 	defer in.Close()
 
 	out, err := os.Create(dst)
 	if err != nil {
-		return err
+		return fmt.Errorf("[DataHub.main.copyFile] os.Create error: %w", err)
 	}
 	defer out.Close()
 
@@ -47,7 +48,7 @@ func copyFile(src, dst string) error {
 func extractZIP(src, dest string) error {
 	r, err := zip.OpenReader(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("[DataHub.main.extractZIP] zip.OpenReader error: %w", err)
 	}
 	defer r.Close()
 
@@ -58,11 +59,11 @@ func extractZIP(src, dest string) error {
 			continue
 		}
 		if err := os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
-			return err
+			return fmt.Errorf("[DataHub.main.extractZIP] os.MkdirAll error: %w", err)
 		}
 		outFile, err := os.Create(fpath)
 		if err != nil {
-			return err
+			return fmt.Errorf("[DataHub.main.extractZIP] os.Create error: %w", err)
 		}
 		rc, err := f.Open()
 		if err != nil {
@@ -83,7 +84,7 @@ func extractZIP(src, dest string) error {
 func extractTAR(src, dest string) error {
 	f, err := os.Open(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("[DataHub.main.extractTAR] os.Open error: %w", err)
 	}
 	defer f.Close()
 	return untar(f, dest)
@@ -92,12 +93,12 @@ func extractTAR(src, dest string) error {
 func extractTARGZ(src, dest string) error {
 	f, err := os.Open(src)
 	if err != nil {
-		return err
+		return fmt.Errorf("[DataHub.main.extractTARGZ] os.Open error: %w", err)
 	}
 	defer f.Close()
 	gzr, err := gzip.NewReader(f)
 	if err != nil {
-		return err
+		return fmt.Errorf("[DataHub.main.extractTARGZ] gzip.NewReader error: %w", err)
 	}
 	defer gzr.Close()
 	return untar(gzr, dest)
@@ -111,7 +112,7 @@ func untar(r io.Reader, dest string) error {
 			break
 		}
 		if err != nil {
-			return err
+			return fmt.Errorf("[DataHub.main.untar] tr.Next error: %w", err)
 		}
 
 		fpath := filepath.Join(dest, hdr.Name)
@@ -122,7 +123,7 @@ func untar(r io.Reader, dest string) error {
 			os.MkdirAll(filepath.Dir(fpath), 0755)
 			outFile, err := os.Create(fpath)
 			if err != nil {
-				return err
+				return fmt.Errorf("[DataHub.main.untar] os.Create error: %w", err)
 			}
 			if _, err = io.Copy(outFile, tr); err != nil {
 				outFile.Close()
