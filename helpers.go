@@ -25,7 +25,7 @@ func ListDirs(dir string) ([]string, error) {
 		}
 	}
 
-	return dirs, err
+	return dirs, nil
 }
 
 func copyFile(src, dst string) error {
@@ -42,7 +42,10 @@ func copyFile(src, dst string) error {
 	defer out.Close()
 
 	_, err = io.Copy(out, in)
-	return err
+	if err != nil {
+		return fmt.Errorf("[DataHub.main.copyFile] io.Copy error: %w", err)
+	}
+	return nil
 }
 
 func extractZIP(src, dest string) error {
@@ -68,12 +71,12 @@ func extractZIP(src, dest string) error {
 		rc, err := f.Open()
 		if err != nil {
 			outFile.Close()
-			return err
+			return fmt.Errorf("[DataHub.main.extractZIP] f.Open error: %w", err)
 		}
 		if _, err = io.Copy(outFile, rc); err != nil {
 			outFile.Close()
 			rc.Close()
-			return err
+			return fmt.Errorf("[DataHub.main.extractZIP] io.Copy error: %w", err)
 		}
 		outFile.Close()
 		rc.Close()
@@ -127,7 +130,7 @@ func untar(r io.Reader, dest string) error {
 			}
 			if _, err = io.Copy(outFile, tr); err != nil {
 				outFile.Close()
-				return err
+				return fmt.Errorf("[DataHub.main.untar] io.Copy error: %w", err)
 			}
 			outFile.Close()
 		}
